@@ -53,15 +53,6 @@ io.write:
 	pop rdx
 	ret
 
-;Input: none
-;
-;Output
-; rax: string data
-; rbx: string size
-io.input:
-	mov rax, io.stdin
-	jmp io.read
-
 ; Input
 ; rax: file descriptor
 ;
@@ -79,8 +70,8 @@ io.read:
 
 	pop rdx
 
+	mov rbx, rax
 	mov rax, input_buffer
-	mov rbx, input_bufsiz
 	ret
 
 ; Input
