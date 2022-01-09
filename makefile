@@ -1,4 +1,4 @@
-BIN=cat
+BIN=cat tidycsv
 
 all: $(BIN)
 

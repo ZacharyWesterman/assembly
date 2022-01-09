@@ -42,6 +42,12 @@ io.error:
 	mov rdi, io.stderr
 	jmp io.write
 
+;Input
+; rax: string data
+; rbx: string size
+; rdi: file descriptor
+;
+;Output: none
 io.write:
 	push rdx
 
