@@ -17,6 +17,10 @@ section .data
 	SYS_OPEN: equ 2
 	O_RDONLY: equ 0
 	O_WRONLY: equ 1
+	O_RDWR: equ 2
+	O_CREAT: equ 100o
+	O_TRUNC: equ 1000o
+	O_APPEND: equ 2000o
 
 section .bss
 	input_buffer: resb 4096
@@ -90,7 +94,7 @@ io.open:
 	mov rsi, O_RDONLY
 	cmp rbx, 'r'
 	je _begin_open
-	mov rsi, O_WRONLY
+	mov rsi, O_WRONLY+O_CREAT+O_TRUNC
 	cmp rbx, 'w'
 	je _begin_open
 	;If mode isn't 'r' or 'w', return error (-1)

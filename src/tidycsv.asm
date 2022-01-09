@@ -4,6 +4,7 @@ extern io.read
 extern io.write
 
 extern io.stdin
+extern io.stdout
 extern io.stderr
 
 section .data
@@ -21,12 +22,12 @@ _start:
 	jg _open_files
 
 	;If no input & output files specified in args, print error
-	mov rdi, io.stdin
+	mov rdi, io.stderr
 	mov rax, help_msg
 	mov rbx, help_msg_len
 	call io.write
-	mov rax, 1 ;Error code
-	jmp _exit_error
+	mov rdi, 1 ;Error code
+	jmp _exit
 
 	_open_files:
 	pop rax ; argv[0]
@@ -36,13 +37,18 @@ _start:
 	mov [input_file], rax
 
 	; if open file failed, return error code
+	mov rdi, 2
 	test rax, rax
-	jl _exit_error
+	jl _exit
 
 	pop rax ; argv[2]
 	mov rbx, 'w'
 	call io.open
 	mov [output_file], rax
+
+	mov rdi, [output_file]
+	test rax, rax
+	jl _exit
 
 	_print_contents:
 		mov rax, [input_file]
@@ -60,13 +66,7 @@ _start:
 		jmp _print_contents
 	_done_printing:
 
-_exit_success:
-	;Exit
-	xor rdi, rdi ;set exit code to 0 (no error)
-	jmp _exit
-
-_exit_error:
-	mov rdi, rax
+	xor rdi, rdi ; Exit success
 
 _exit:
 	mov rax, 60
