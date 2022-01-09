@@ -1,10 +1,17 @@
-cat: cat.o io.o
+BIN=cat
+
+all: $(BIN)
+
+min: all
+	strip -s $(BIN)
+
+%: %.o io.o
 	ld -o $@ $^
 
-%.o: %.asm
-	nasm -f elf64 $^
+%.o: src/%.asm
+	nasm -f elf64 $^ -o $@
 
 clean:
-	rm -f *.o cat
+	rm -rf $(BIN) *.o
 
-.PHONY: clean
+.PHONY: clean all min
