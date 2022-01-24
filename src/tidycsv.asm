@@ -11,9 +11,6 @@ section .data
 	help_msg: db "Usage: tidycsv {input_file} {output_file}", 0x0a
 	help_msg_len: equ $ - help_msg
 
-	progress: db "|/-\"
-	rst: db 0x0c
-
 	delim: equ ','
 
 section .bss
@@ -22,6 +19,7 @@ section .bss
 	is_quoted: resq 1
 	is_escaped: resq 1
 	found_cr: resq 1
+	is_begin_item: resq 1
 
 	output_buffer: resb 4096
 
@@ -34,6 +32,8 @@ _start:
 	mov [is_quoted], rax
 	mov [is_escaped], rax
 	mov [found_cr], rax
+	mov rax, 1
+	mov [is_begin_item], rax
 
 	; check argc
 	pop rax ;argc
@@ -87,6 +87,38 @@ _start:
 			add rax, 1
 			push rax
 
+			; If we're at the beginning of an item, skip quotes
+			mov rax, [is_begin_item]
+			cmp rax, 0
+			jz _not_begin_item
+			xor rax, rax
+			mov [is_begin_item], rax
+
+			cmp dl, '"'
+			jnz _not_begin_item ;Not in quotes
+			mov rax, 1
+			mov [is_quoted], rax
+			jmp _next_lp
+			_not_begin_item:
+
+			;If we're in quotes, convert delim or \r to space,
+			; and if this char is ", skip it.
+			mov rax, [is_quoted]
+			cmp rax, 1
+			jnz _not_inside_quot ;Not in quotes
+			cmp dl, '"'
+			jnz _chk2
+			xor rax, rax
+			mov [is_quoted], rax
+			jmp _next_lp
+			_chk2:
+			cmp dl, delim
+			jnz _not_inside_quot
+			cmp dl, 0x0d
+			jnz _not_inside_quot
+			mov dl, ' '
+			_not_inside_quot:
+
 
 			; if this character is LF and last char was CR
 			mov rax, [found_cr]
@@ -97,6 +129,15 @@ _start:
 			sub rcx, 1
 			_after_chk_crlf:
 
+			; if this character is a delim or newline, we're at the beginning of an item
+			cmp rax, 0x0b
+			jz _after_chk_begin
+			cmp dl, delim
+			jz _after_chk_begin
+			mov rax, 0
+			_after_chk_begin:
+			mov [is_begin_item], rax
+
 			; if this character is CR,
 			; make a note of that
 			xor rax, rax
@@ -105,6 +146,16 @@ _start:
 			mov rax, 1
 			_cif_ret:
 			mov [found_cr], rax
+
+			mov rax, [is_quoted]
+			cmp rax, 0
+			jz _not_end_quot
+			cmp dl, '"'
+			jnz _not_end_quot ;Not in quotes
+			xor rax, rax
+			mov [is_quoted], rax
+			jmp _next_lp
+			_not_end_quot:
 
 			_append_to_output:
 			mov [output_buffer, rcx], dl
